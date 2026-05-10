@@ -93,6 +93,8 @@
     border-radius: 24px;
     padding: 28px 20px;
     min-height: 340px;
+    max-height: 55vh;
+    overflow-y: auto;
     backdrop-filter: blur(10px);
     border: 3px solid rgba(255,215,0,0.25);
     box-shadow: 0 8px 32px rgba(0,119,182,0.2);
@@ -124,7 +126,7 @@
     border-radius: 16px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    min-width: 62px;
+    min-width: 54px;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -320,12 +322,16 @@
 .love-inputs {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 16px;
   width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 .love-input {
   flex: 1;
+  min-width: 100px;
+  max-width: 160px;
   border: 2px solid rgba(255,105,180,0.3);
   border-radius: 16px;
   padding: 12px 16px;
@@ -337,7 +343,7 @@
 }
 .love-input:focus { outline: none; border-color: var(--jellyfish); }
 .love-input::placeholder { color: #ccc; }
-.love-plus { font-size: 24px; }
+.love-plus { font-size: 24px; flex-shrink: 0; }
 .love-result {
   margin-top: 16px;
   animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -401,6 +407,38 @@
   outline: 2px solid var(--coral);
   outline-offset: 1px;
 }
+.jellyfish-counter {
+  font-family: 'Luckiest Guy', 'ZCOOL KuaiLe', cursive;
+  font-size: 56px;
+  color: var(--jellyfish);
+  margin: 8px 0 0;
+}
+.jellyfish-subtitle {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 4px;
+}
+#jellyfishTap:active { transform: scale(0.88); }
+#jellyfishTap.tapped { animation: jellyBounce 0.15s ease; }
+@keyframes jellyBounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.85); }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.jelly-float {
+  position: absolute;
+  pointer-events: none;
+  font-size: 18px;
+  color: var(--jellyfish);
+  font-weight: bold;
+  animation: floatUp 1s ease-out forwards;
+  white-space: nowrap;
+}
+.jellyfish-float-container {
+  position: relative;
+  min-height: 40px;
+}
 </style>
 </head>
 <body>
@@ -435,9 +473,9 @@
         <div class="fortune-advice" id="fortuneAdvice"></div>
       </div>
       <div class="fortune-placeholder" id="fortunePlaceholder">
-        拉一下神奇海螺<br>它会告诉你今天的命运 👇
+        摇一摇神奇海螺<br>每次都有不同的预言 👇
       </div>
-      <button class="btn-bubble" id="shellBtn">🐚 问问神奇海螺</button>
+      <button class="btn-bubble" id="shellBtn">🐚 摇一摇神奇海螺</button>
     </div>
     <div class="tool-panel" id="panel-2" role="tabpanel">
       <div class="tool-icon">🪼</div>
@@ -471,6 +509,14 @@
         <div class="love-comment" id="loveComment"></div>
       </div>
     </div>
+    <div class="tool-panel" id="panel-4" role="tabpanel">
+      <div class="tool-icon" id="jellyfishTap" style="font-size:72px;cursor:pointer;transition:transform 0.1s;user-select:none;-webkit-user-select:none;">🪼</div>
+      <h2 class="tool-title">敲水母</h2>
+      <div class="jellyfish-counter" id="jellyCounter">0</div>
+      <div class="jellyfish-subtitle">水母+1</div>
+      <div class="jellyfish-float-container" id="jellyFloat"></div>
+      <button class="btn-bubble" id="resetJellyBtn" style="margin-top:12px;font-size:13px;padding:10px 24px;">🔄 重置水母</button>
+    </div>
   </div>
 
   <div class="tab-bar" id="tabBar">
@@ -478,6 +524,7 @@
     <button class="tab-btn" data-tab="1" role="tab" aria-selected="false" aria-controls="panel-1"><span class="icon">🐚</span><span class="label">运势</span></button>
     <button class="tab-btn" data-tab="2" role="tab" aria-selected="false" aria-controls="panel-2"><span class="icon">🪼</span><span class="label">密语</span></button>
     <button class="tab-btn" data-tab="3" role="tab" aria-selected="false" aria-controls="panel-3"><span class="icon">🦀</span><span class="label">爱意值</span></button>
+    <button class="tab-btn" data-tab="4" role="tab" aria-selected="false" aria-controls="panel-4"><span class="icon">🪼</span><span class="label">敲水母</span></button>
   </div>
 </div>
 <script>
@@ -513,6 +560,74 @@ const bubbleInterval = setInterval(createBubble, 2000);
 for (let i = 0; i < 5; i++) {
   setTimeout(() => createBubble(), i * 400);
 }
+
+// === Sound Engine ===
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+}
+
+function playPop() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.15);
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
+function playDing() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+  osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.08);
+  gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.4);
+}
+
+function playZap() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.3);
+}
+
+function playSplash() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.1);
+}
+
+// Initialize audio on first user interaction
+document.addEventListener('click', initAudio, { once: true });
+document.addEventListener('touchstart', initAudio, { once: true });
 
 // === 夸夸生成器 ===
 const compliments = [
@@ -578,6 +693,7 @@ function burstBubbles() {
 }
 
 document.getElementById('praiseBtn').addEventListener('click', function() {
+  playPop();
   const textEl = document.getElementById('complimentText');
   textEl.textContent = getCompliment();
   textEl.classList.remove('pop');
@@ -603,17 +719,11 @@ const fortunes = [
 ];
 
 function getDailyFortune() {
-  const today = new Date().toISOString().slice(0, 10);
-  let hash = 0;
-  for (let i = 0; i < today.length; i++) {
-    hash = ((hash << 5) - hash) + today.charCodeAt(i);
-    hash |= 0;
-  }
-  const idx = Math.abs(hash) % fortunes.length;
-  return fortunes[idx];
+  return fortunes[Math.floor(Math.random() * fortunes.length)];
 }
 
 document.getElementById('shellBtn').addEventListener('click', function() {
+  playDing();
   const shell = document.getElementById('shellIcon');
   const result = document.getElementById('fortuneResult');
   const placeholder = document.getElementById('fortunePlaceholder');
@@ -694,6 +804,7 @@ document.getElementById('modeDecrypt').addEventListener('click', function() {
 });
 
 document.getElementById('jellyBtn').addEventListener('click', function() {
+  playZap();
   const input = document.getElementById('msgInput').value.trim();
   if (!input) return;
   const outputDiv = document.getElementById('jellyOutput');
@@ -776,6 +887,7 @@ function getLoveComment(percent) {
 }
 
 document.getElementById('loveBtn').addEventListener('click', function() {
+  playPop();
   const name1 = document.getElementById('name1').value.trim();
   const name2 = document.getElementById('name2').value.trim();
   if (!name1 || !name2) return;
@@ -796,6 +908,38 @@ document.getElementById('loveBtn').addEventListener('click', function() {
     barFill.style.width = percent + '%';
     result.style.animation = 'bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
   }, 50);
+});
+
+// === 敲水母 ===
+let jellyCount = 0;
+const jellyTap = document.getElementById('jellyfishTap');
+const jellyCounter = document.getElementById('jellyCounter');
+const jellyFloat = document.getElementById('jellyFloat');
+
+jellyTap.addEventListener('click', function(e) {
+  jellyCount++;
+  jellyCounter.textContent = jellyCount;
+  playSplash();
+
+  // Bounce animation
+  this.classList.remove('tapped');
+  void this.offsetWidth;
+  this.classList.add('tapped');
+
+  // Float up "+1" text
+  const floatEl = document.createElement('span');
+  floatEl.className = 'jelly-float';
+  floatEl.textContent = '🪼+1';
+  floatEl.style.left = (Math.random() * 60 - 10) + 'px';
+  floatEl.style.top = '0px';
+  jellyFloat.appendChild(floatEl);
+  setTimeout(() => floatEl.remove(), 1000);
+});
+
+document.getElementById('resetJellyBtn').addEventListener('click', function() {
+  jellyCount = 0;
+  jellyCounter.textContent = '0';
+  playDing();
 });
 </script>
 </body>
