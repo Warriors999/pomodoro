@@ -61,6 +61,7 @@
     padding: 24px 16px 12px;
     position: relative;
     z-index: 10;
+    animation: floatUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
   }
   .header .logo { font-size: 42px; margin-bottom: 4px; }
   .header h1 {
@@ -81,9 +82,13 @@
     position: relative;
     z-index: 10;
     min-height: 340px;
+    animation: floatUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s both;
   }
   .tool-panel {
     display: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
     background: rgba(255,255,255,0.85);
     border-radius: 24px;
     padding: 28px 20px;
@@ -96,7 +101,7 @@
     align-items: center;
     justify-content: center;
   }
-  .tool-panel.active { display: flex; }
+  .tool-panel.active { display: flex; opacity: 1; transform: translateY(0); }
   /* 底部Tab */
   .tab-bar {
     position: absolute;
@@ -109,6 +114,7 @@
     padding: 10px 8px 18px;
     border-top: 3px solid var(--pineapple);
     z-index: 20;
+    animation: floatUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s both;
   }
   .tab-btn {
     background: none;
@@ -192,7 +198,6 @@
     color: var(--text-dark);
     line-height: 1.6;
     position: relative;
-    transition: all 0.3s ease;
   }
   .compliment-bubble.pop { animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
   @keyframes popIn {
@@ -369,6 +374,33 @@
   line-height: 1.5;
   font-weight: bold;
 }
+@keyframes floatUp {
+  0% { transform: translateY(-40px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+.tab-btn:focus-visible {
+  outline: 3px solid var(--pineapple);
+  outline-offset: 2px;
+}
+.btn-bubble:focus-visible {
+  outline: 3px solid var(--pineapple);
+  outline-offset: 2px;
+}
+.mode-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+.love-input:focus-visible, .msg-input:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 1px;
+}
 </style>
 </head>
 <body>
@@ -385,7 +417,7 @@
   </div>
 
   <div class="content-area" id="contentArea">
-    <div class="tool-panel active" id="panel-0">
+    <div class="tool-panel active" id="panel-0" role="tabpanel">
       <div class="tool-icon">🧽</div>
       <h2 class="tool-title">海绵宝宝的夸夸气泡</h2>
       <div class="compliment-bubble" id="complimentText">
@@ -394,7 +426,7 @@
       <button class="btn-bubble" id="praiseBtn">🫧 吹一个泡泡</button>
       <div class="bubble-burst" id="bubbleBurst" style="position:relative;"></div>
     </div>
-    <div class="tool-panel" id="panel-1">
+    <div class="tool-panel" id="panel-1" role="tabpanel">
       <div class="tool-icon fortune-shell" id="shellIcon">🐚</div>
       <h2 class="tool-title">神奇海螺的预言</h2>
       <div class="fortune-result" id="fortuneResult" style="display:none;">
@@ -407,7 +439,7 @@
       </div>
       <button class="btn-bubble" id="shellBtn">🐚 问问神奇海螺</button>
     </div>
-    <div class="tool-panel" id="panel-2">
+    <div class="tool-panel" id="panel-2" role="tabpanel">
       <div class="tool-icon">🪼</div>
       <h2 class="tool-title">水母传信</h2>
       <div class="jellyfish-mode">
@@ -422,7 +454,7 @@
       </div>
       <div class="jellyfish-spark" id="jellySpark"></div>
     </div>
-    <div class="tool-panel" id="panel-3">
+    <div class="tool-panel" id="panel-3" role="tabpanel">
       <div class="tool-icon">🦀</div>
       <h2 class="tool-title">痞老板的爱意公式</h2>
       <div class="love-inputs">
@@ -442,10 +474,10 @@
   </div>
 
   <div class="tab-bar" id="tabBar">
-    <button class="tab-btn active" data-tab="0"><span class="icon">🧽</span><span class="label">夸夸</span></button>
-    <button class="tab-btn" data-tab="1"><span class="icon">🐚</span><span class="label">运势</span></button>
-    <button class="tab-btn" data-tab="2"><span class="icon">🪼</span><span class="label">密语</span></button>
-    <button class="tab-btn" data-tab="3"><span class="icon">🦀</span><span class="label">爱意值</span></button>
+    <button class="tab-btn active" data-tab="0" role="tab" aria-selected="true" aria-controls="panel-0"><span class="icon">🧽</span><span class="label">夸夸</span></button>
+    <button class="tab-btn" data-tab="1" role="tab" aria-selected="false" aria-controls="panel-1"><span class="icon">🐚</span><span class="label">运势</span></button>
+    <button class="tab-btn" data-tab="2" role="tab" aria-selected="false" aria-controls="panel-2"><span class="icon">🪼</span><span class="label">密语</span></button>
+    <button class="tab-btn" data-tab="3" role="tab" aria-selected="false" aria-controls="panel-3"><span class="icon">🦀</span><span class="label">爱意值</span></button>
   </div>
 </div>
 <script>
@@ -454,14 +486,16 @@ const tabBtns = document.querySelectorAll('.tab-btn');
 const panels = document.querySelectorAll('.tool-panel');
 tabBtns.forEach(btn => {
   btn.addEventListener('click', () => {
-    tabBtns.forEach(b => b.classList.remove('active'));
+    tabBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
     panels.forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
   });
 });
 
 // Background bubbles
+const appEl = document.getElementById('app');
 function createBubble() {
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
@@ -472,11 +506,13 @@ function createBubble() {
   bubble.style.bottom = '-30px';
   bubble.style.animationDuration = (Math.random() * 6 + 6) + 's';
   bubble.style.animationDelay = '0s';
-  document.getElementById('app').appendChild(bubble);
+  appEl.appendChild(bubble);
   setTimeout(() => bubble.remove(), 12000);
 }
-setInterval(createBubble, 2000);
-createBubble(); createBubble(); createBubble();
+const bubbleInterval = setInterval(createBubble, 2000);
+for (let i = 0; i < 5; i++) {
+  setTimeout(() => createBubble(), i * 400);
+}
 
 // === 夸夸生成器 ===
 const compliments = [
@@ -537,7 +573,7 @@ function burstBubbles() {
     particle.style.animationDuration = (Math.random() * 0.6 + 0.4) + 's';
     particle.style.animationDelay = (Math.random() * 0.2) + 's';
     container.appendChild(particle);
-    setTimeout(() => particle.remove(), 1000);
+    setTimeout(() => particle.remove(), 1200);
   }
 }
 
@@ -633,7 +669,7 @@ function sparkEffect(container) {
     spark.style.left = (Math.random() * 80 + 10) + '%';
     spark.style.top = '50%';
     container.appendChild(spark);
-    setTimeout(() => spark.remove(), 700);
+    setTimeout(() => spark.remove(), 800);
   }
 }
 
