@@ -242,6 +242,76 @@
   }
   .fortune-advice { font-size: 16px; color: var(--text-dark); line-height: 1.5; font-weight: bold; }
   .fortune-placeholder { color: #999; font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+  .jellyfish-mode { display: flex; gap: 10px; margin-bottom: 16px; justify-content: center; }
+  .mode-btn {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 2px solid var(--coral);
+    background: transparent;
+    font-family: 'ZCOOL KuaiLe', cursive;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--coral);
+    transition: all 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .mode-btn.active { background: var(--coral); color: #fff; }
+  .msg-input {
+    width: 100%;
+    border: 2px solid rgba(123,104,238,0.3);
+    border-radius: 16px;
+    padding: 14px;
+    font-family: 'ZCOOL KuaiLe', cursive;
+    font-size: 15px;
+    resize: none;
+    background: rgba(255,255,255,0.6);
+    margin-bottom: 16px;
+    color: var(--text-dark);
+  }
+  .msg-input:focus { outline: none; border-color: var(--coral); }
+  .msg-input::placeholder { color: #bbb; }
+  .jellyfish-output {
+    margin-top: 16px;
+    background: rgba(255,105,180,0.08);
+    border-radius: 16px;
+    padding: 16px;
+    border: 2px dashed var(--jellyfish);
+    animation: fadeUp 0.4s ease;
+  }
+  .output-text {
+    font-size: 14px;
+    color: var(--text-dark);
+    word-break: break-all;
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .copy-btn {
+    background: var(--jellyfish);
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-family: 'ZCOOL KuaiLe', cursive;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .copy-btn:active { transform: scale(0.92); }
+  .jellyfish-spark { position: relative; }
+  .spark {
+    position: absolute;
+    pointer-events: none;
+    color: var(--jellyfish);
+    font-size: 16px;
+    animation: sparkBurst 0.7s ease-out forwards;
+  }
+  @keyframes sparkBurst {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--sx), var(--sy)) scale(0); opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -280,7 +350,21 @@
       </div>
       <button class="btn-bubble" id="shellBtn">🐚 问问神奇海螺</button>
     </div>
-    <div class="tool-panel" id="panel-2"><h2>🪼 密语</h2></div>
+    <div class="tool-panel" id="panel-2">
+      <div class="tool-icon">🪼</div>
+      <h2 class="tool-title">水母传信</h2>
+      <div class="jellyfish-mode">
+        <button class="mode-btn active" id="modeEncrypt">🔐 加密</button>
+        <button class="mode-btn" id="modeDecrypt">🔓 解密</button>
+      </div>
+      <textarea class="msg-input" id="msgInput" placeholder="在这里输入你的悄悄话..." rows="3"></textarea>
+      <button class="btn-bubble" id="jellyBtn">⚡ 水母发电</button>
+      <div class="jellyfish-output" id="jellyOutput" style="display:none;">
+        <div class="output-text" id="outputText"></div>
+        <button class="copy-btn" id="copyBtn">📋 复制密文</button>
+      </div>
+      <div class="jellyfish-spark" id="jellySpark"></div>
+    </div>
     <div class="tool-panel" id="panel-3"><h2>🦀 爱意值</h2></div>
   </div>
 
@@ -440,6 +524,102 @@ document.getElementById('shellBtn').addEventListener('click', function() {
     void result.offsetWidth;
     result.style.animation = 'fadeUp 0.5s ease';
   }, 700);
+});
+
+// === 水母密语 ===
+let currentMode = 'encrypt';
+
+function encryptMessage(text) {
+  const b64 = btoa(unescape(encodeURIComponent(text)));
+  const emojis = ['🪼', '⚡', '🐚', '🫧', '🌊', '💜', '🪸', '🐠'];
+  let wrapped = '';
+  for (let i = 0; i < b64.length; i++) {
+    wrapped += b64[i];
+    if ((i + 1) % 5 === 0) wrapped += emojis[Math.floor(Math.random() * emojis.length)];
+  }
+  return '🪼⚡' + wrapped + '⚡🪼';
+}
+
+function decryptMessage(cipher) {
+  try {
+    let cleaned = cipher.replace(/🪼⚡|⚡🪼/g, '').replace(/[\u{1F300}-\u{1F9FF}]/gu, '');
+    return decodeURIComponent(escape(atob(cleaned)));
+  } catch(e) {
+    return null;
+  }
+}
+
+function sparkEffect(container) {
+  const emojis = ['⚡', '💜', '✨', '🪼', '🔮'];
+  for (let i = 0; i < 10; i++) {
+    const spark = document.createElement('span');
+    spark.className = 'spark';
+    spark.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    spark.style.setProperty('--sx', (Math.random() * 100 - 50) + 'px');
+    spark.style.setProperty('--sy', (Math.random() * -80 - 20) + 'px');
+    spark.style.left = (Math.random() * 80 + 10) + '%';
+    spark.style.top = '50%';
+    container.appendChild(spark);
+    setTimeout(() => spark.remove(), 700);
+  }
+}
+
+document.getElementById('modeEncrypt').addEventListener('click', function() {
+  currentMode = 'encrypt';
+  this.classList.add('active');
+  document.getElementById('modeDecrypt').classList.remove('active');
+  document.getElementById('msgInput').placeholder = '在这里输入你的悄悄话...';
+  document.getElementById('jellyBtn').innerHTML = '⚡ 水母发电（加密）';
+  document.getElementById('jellyOutput').style.display = 'none';
+  document.getElementById('msgInput').value = '';
+});
+
+document.getElementById('modeDecrypt').addEventListener('click', function() {
+  currentMode = 'decrypt';
+  this.classList.add('active');
+  document.getElementById('modeEncrypt').classList.remove('active');
+  document.getElementById('msgInput').placeholder = '粘贴密文到这里解密...';
+  document.getElementById('jellyBtn').innerHTML = '⚡ 水母发电（解密）';
+  document.getElementById('jellyOutput').style.display = 'none';
+  document.getElementById('msgInput').value = '';
+});
+
+document.getElementById('jellyBtn').addEventListener('click', function() {
+  const input = document.getElementById('msgInput').value.trim();
+  if (!input) return;
+  const outputDiv = document.getElementById('jellyOutput');
+  const outputText = document.getElementById('outputText');
+
+  sparkEffect(document.getElementById('jellySpark'));
+
+  if (currentMode === 'encrypt') {
+    outputText.textContent = encryptMessage(input);
+    document.getElementById('copyBtn').textContent = '📋 复制密文';
+  } else {
+    const decrypted = decryptMessage(input);
+    if (decrypted !== null) {
+      outputText.textContent = '💌 解密结果：' + decrypted;
+    } else {
+      outputText.textContent = '❌ 这好像不是水母密语...格式不对哦！';
+    }
+    document.getElementById('copyBtn').textContent = '📋 复制结果';
+  }
+  outputDiv.style.display = 'block';
+  outputDiv.style.animation = 'none';
+  void outputDiv.offsetWidth;
+  outputDiv.style.animation = 'fadeUp 0.4s ease';
+});
+
+document.getElementById('copyBtn').addEventListener('click', function() {
+  const text = document.getElementById('outputText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    this.textContent = '✅ 已复制！';
+    setTimeout(() => {
+      this.textContent = currentMode === 'encrypt' ? '📋 复制密文' : '📋 复制结果';
+    }, 2000);
+  }).catch(() => {
+    this.textContent = '❌ 复制失败，请手动选择';
+  });
 });
 </script>
 </body>
