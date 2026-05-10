@@ -312,6 +312,63 @@
     0% { transform: translate(0,0) scale(1); opacity: 1; }
     100% { transform: translate(var(--sx), var(--sy)) scale(0); opacity: 0; }
   }
+.love-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+.love-input {
+  flex: 1;
+  border: 2px solid rgba(255,105,180,0.3);
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-family: 'ZCOOL KuaiLe', cursive;
+  font-size: 15px;
+  text-align: center;
+  background: rgba(255,255,255,0.6);
+  color: var(--text-dark);
+}
+.love-input:focus { outline: none; border-color: var(--jellyfish); }
+.love-input::placeholder { color: #ccc; }
+.love-plus { font-size: 24px; }
+.love-result {
+  margin-top: 16px;
+  animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes bounceIn {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.love-percent {
+  font-family: 'Luckiest Guy', 'ZCOOL KuaiLe', cursive;
+  font-size: 42px;
+  color: var(--jellyfish);
+  margin-bottom: 8px;
+}
+.love-bar-container {
+  width: 100%;
+  height: 16px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.love-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--jellyfish), var(--pineapple));
+  border-radius: 8px;
+  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 0;
+}
+.love-comment {
+  font-size: 15px;
+  color: var(--text-dark);
+  line-height: 1.5;
+  font-weight: bold;
+}
 </style>
 </head>
 <body>
@@ -365,7 +422,23 @@
       </div>
       <div class="jellyfish-spark" id="jellySpark"></div>
     </div>
-    <div class="tool-panel" id="panel-3"><h2>🦀 爱意值</h2></div>
+    <div class="tool-panel" id="panel-3">
+      <div class="tool-icon">🦀</div>
+      <h2 class="tool-title">痞老板的爱意公式</h2>
+      <div class="love-inputs">
+        <input class="love-input" id="name1" placeholder="你的名字" maxlength="10">
+        <div class="love-plus">💕</div>
+        <input class="love-input" id="name2" placeholder="TA的名字" maxlength="10">
+      </div>
+      <button class="btn-bubble" id="loveBtn">🧪 计算爱意值</button>
+      <div class="love-result" id="loveResult" style="display:none;">
+        <div class="love-percent" id="lovePercent"></div>
+        <div class="love-bar-container">
+          <div class="love-bar-fill" id="loveBarFill"></div>
+        </div>
+        <div class="love-comment" id="loveComment"></div>
+      </div>
+    </div>
   </div>
 
   <div class="tab-bar" id="tabBar">
@@ -620,6 +693,73 @@ document.getElementById('copyBtn').addEventListener('click', function() {
   }).catch(() => {
     this.textContent = '❌ 复制失败，请手动选择';
   });
+});
+// === 痞老板爱意值计算器 ===
+const loveComments = {
+  high: [
+    '💚 痞老板震惊！这配方比蟹黄堡秘方还完美！',
+    '💚 痞老板说：你们的爱意值超过了我的邪恶计划成功率！',
+    '💚 连电脑老婆凯伦都算不出你们的爱意上限！',
+    '💚 痞老板：我不偷秘方了，我要偷学你们的爱情！',
+    '💚 这爱意配方值100万个蟹黄堡！蟹老板都酸了 🍔',
+  ],
+  mid: [
+    '🔬 配方还在实验中，但痞老板很看好你们！',
+    '🔬 痞老板说：差一点就够打败蟹老板了，加油！',
+    '🔬 凯伦计算显示：爱意值稳定增长中 📈',
+    '🔬 痞老板：再多加点糖就完美了（他在说蟹黄堡）',
+  ],
+  low: [
+    '🧪 痞老板皱眉：配方还需要调整...不过没关系！',
+    '🧪 凯伦说数据需要重新校准，建议多约会几次 📊',
+    '🧪 痞老板的实验炸了，但你们的爱不会！💥',
+    '🧪 这配方...痞老板建议你们多去蟹堡王吃几次饭 🍔',
+  ],
+};
+
+function loveHash(str1, str2) {
+  let hash = 0;
+  const combined = (str1 + str2).toLowerCase().trim();
+  for (let i = 0; i < combined.length; i++) {
+    hash = ((hash << 5) - hash) + combined.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getLovePercent(name1, name2) {
+  const hash = loveHash(name1, name2);
+  return 60 + (hash % 41); // 60-100%
+}
+
+function getLoveComment(percent) {
+  if (percent >= 95) return loveComments.high[0];
+  if (percent >= 85) return loveComments.high[Math.floor(Math.random() * loveComments.high.length)];
+  if (percent >= 75) return loveComments.mid[Math.floor(Math.random() * loveComments.mid.length)];
+  return loveComments.low[Math.floor(Math.random() * loveComments.low.length)];
+}
+
+document.getElementById('loveBtn').addEventListener('click', function() {
+  const name1 = document.getElementById('name1').value.trim();
+  const name2 = document.getElementById('name2').value.trim();
+  if (!name1 || !name2) return;
+
+  const percent = getLovePercent(name1, name2);
+  const comment = getLoveComment(percent);
+  const result = document.getElementById('loveResult');
+  const barFill = document.getElementById('loveBarFill');
+
+  document.getElementById('lovePercent').textContent = percent + '%';
+  document.getElementById('loveComment').textContent = comment;
+
+  result.style.display = 'block';
+  result.style.animation = 'none';
+  void result.offsetWidth;
+
+  setTimeout(() => {
+    barFill.style.width = percent + '%';
+    result.style.animation = 'bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+  }, 50);
 });
 </script>
 </body>
