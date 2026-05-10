@@ -209,6 +209,39 @@
     0% { transform: translateY(0) scale(1); opacity: 1; }
     100% { transform: translateY(-80px) scale(0); opacity: 0; }
   }
+  .fortune-shell { cursor: pointer; transition: transform 0.3s; }
+  .fortune-shell.shaking { animation: shake 0.6s ease-in-out; }
+  @keyframes shake {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-20deg); }
+    40% { transform: rotate(20deg); }
+    60% { transform: rotate(-15deg); }
+    80% { transform: rotate(10deg); }
+  }
+  .fortune-result {
+    background: linear-gradient(135deg, rgba(123,104,238,0.15), rgba(255,105,180,0.1));
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+    animation: fadeUp 0.5s ease;
+  }
+  @keyframes fadeUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .fortune-stars { font-size: 24px; margin-bottom: 8px; }
+  .fortune-color { font-size: 14px; color: #666; margin-bottom: 4px; }
+  .fortune-color span {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-left: 6px;
+    border: 2px solid rgba(0,0,0,0.1);
+  }
+  .fortune-advice { font-size: 16px; color: var(--text-dark); line-height: 1.5; font-weight: bold; }
+  .fortune-placeholder { color: #999; font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
 </style>
 </head>
 <body>
@@ -234,7 +267,19 @@
       <button class="btn-bubble" id="praiseBtn">🫧 吹一个泡泡</button>
       <div class="bubble-burst" id="bubbleBurst" style="position:relative;"></div>
     </div>
-    <div class="tool-panel" id="panel-1"><h2>🐚 运势</h2></div>
+    <div class="tool-panel" id="panel-1">
+      <div class="tool-icon fortune-shell" id="shellIcon">🐚</div>
+      <h2 class="tool-title">神奇海螺的预言</h2>
+      <div class="fortune-result" id="fortuneResult" style="display:none;">
+        <div class="fortune-stars" id="fortuneStars"></div>
+        <div class="fortune-color" id="fortuneColor"></div>
+        <div class="fortune-advice" id="fortuneAdvice"></div>
+      </div>
+      <div class="fortune-placeholder" id="fortunePlaceholder">
+        拉一下神奇海螺<br>它会告诉你今天的命运 👇
+      </div>
+      <button class="btn-bubble" id="shellBtn">🐚 问问神奇海螺</button>
+    </div>
     <div class="tool-panel" id="panel-2"><h2>🪼 密语</h2></div>
     <div class="tool-panel" id="panel-3"><h2>🦀 爱意值</h2></div>
   </div>
@@ -346,6 +391,55 @@ document.getElementById('praiseBtn').addEventListener('click', function() {
   void textEl.offsetWidth;
   textEl.classList.add('pop');
   burstBubbles();
+});
+
+// === 神奇海螺运势 ===
+const fortunes = [
+  { stars: 5, color: '#FFD700', colorName: '菠萝金', advice: '今日大吉！适合收红包、吃大餐、被夸夸！💰🍔' },
+  { stars: 4, color: '#FF69B4', colorName: '水母粉', advice: '运势不错！可能会遇到一个特别可爱的人（照镜子看看）🪞' },
+  { stars: 5, color: '#00BFFF', colorName: '海洋蓝', advice: '超级幸运日！蟹老板可能会请你吃蟹黄堡！🍔' },
+  { stars: 3, color: '#7B68EE', colorName: '珊瑚紫', advice: '今日运势平稳，不宜打工，宜躺平追剧 📺' },
+  { stars: 4, color: '#32CD32', colorName: '海藻绿', advice: '好运连连！海绵宝宝为你吹了一整天的泡泡！🫧' },
+  { stars: 5, color: '#FFD700', colorName: '菠萝金', advice: '宇宙级好运！连痞老板都放弃偷秘方来给你庆祝！🎉' },
+  { stars: 3, color: '#FFA500', colorName: '橘子橙', advice: '今日宜：撒娇、吃零食、收礼物。忌：做家务、生气 😤' },
+  { stars: 4, color: '#FF69B4', colorName: '水母粉', advice: '派大星说今天你会收到惊喜！他从来不骗人（大概）⭐' },
+  { stars: 2, color: '#87CEEB', colorName: '浅天蓝', advice: '今日小确丧？没关系！海绵宝宝给你准备了Plan B：明天会更好！' },
+  { stars: 5, color: '#FFD700', colorName: '菠萝金', advice: '章鱼哥都露出了笑容！今天绝对不简单！😊' },
+  { stars: 4, color: '#7B68EE', colorName: '珊瑚紫', advice: '珊迪的松鼠科学表明：你今天的开心指数将突破历史新高！📈' },
+  { stars: 3, color: '#32CD32', colorName: '海藻绿', advice: '今日宜早睡，宜被爱，宜原谅自己多吃了两个汉堡 🍔😋' },
+];
+
+function getDailyFortune() {
+  const today = new Date().toISOString().slice(0, 10);
+  let hash = 0;
+  for (let i = 0; i < today.length; i++) {
+    hash = ((hash << 5) - hash) + today.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % fortunes.length;
+  return fortunes[idx];
+}
+
+document.getElementById('shellBtn').addEventListener('click', function() {
+  const shell = document.getElementById('shellIcon');
+  const result = document.getElementById('fortuneResult');
+  const placeholder = document.getElementById('fortunePlaceholder');
+
+  shell.classList.add('shaking');
+  setTimeout(() => shell.classList.remove('shaking'), 600);
+
+  setTimeout(() => {
+    const fortune = getDailyFortune();
+    document.getElementById('fortuneStars').textContent = '⭐'.repeat(fortune.stars);
+    document.getElementById('fortuneColor').innerHTML = '幸运颜色：' + fortune.colorName +
+      ' <span style="background:' + fortune.color + ';"></span>';
+    document.getElementById('fortuneAdvice').textContent = fortune.advice;
+    result.style.display = 'block';
+    placeholder.style.display = 'none';
+    result.style.animation = 'none';
+    void result.offsetWidth;
+    result.style.animation = 'fadeUp 0.5s ease';
+  }, 700);
 });
 </script>
 </body>
