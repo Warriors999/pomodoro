@@ -280,11 +280,8 @@
   .msg-input::placeholder { color: #bbb; }
   .jellyfish-output {
     margin-top: 16px;
-    background: rgba(255,105,180,0.08);
-    border-radius: 16px;
-    padding: 16px;
-    border: 2px dashed var(--jellyfish);
     animation: fadeUp 0.4s ease;
+    width: 100%;
   }
   .output-text {
     font-size: 14px;
@@ -297,16 +294,17 @@
     background: var(--jellyfish);
     color: #fff;
     border: none;
-    padding: 8px 20px;
+    padding: 10px 24px;
     border-radius: 20px;
     font-family: 'ZCOOL KuaiLe', cursive;
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
     transition: transform 0.15s;
     user-select: none;
     -webkit-user-select: none;
+    width: 100%;
   }
-  .copy-btn:active { transform: scale(0.92); }
+  .copy-btn:active { transform: scale(0.95); }
   .jellyfish-spark { position: relative; }
   .spark {
     position: absolute;
@@ -439,6 +437,51 @@
   position: relative;
   min-height: 40px;
 }
+.tool-desc {
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+.telegram-card {
+  background: linear-gradient(135deg, #fdf2f8, #fef9c7);
+  border: 2px solid var(--jellyfish);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 10px;
+  text-align: left;
+  box-shadow: 0 4px 16px rgba(255,105,180,0.15);
+}
+.telegram-header {
+  font-size: 12px;
+  color: var(--jellyfish);
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+.telegram-body {
+  font-size: 14px;
+  color: var(--text-dark);
+  word-break: break-all;
+  line-height: 1.6;
+  background: rgba(255,255,255,0.6);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(0,0,0,0.1);
+  font-family: monospace;
+  text-align: center;
+  user-select: all;
+  -webkit-user-select: all;
+}
+.telegram-footer {
+  font-size: 11px;
+  color: #999;
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+}
 </style>
 </head>
 <body>
@@ -479,16 +522,21 @@
     </div>
     <div class="tool-panel" id="panel-2" role="tabpanel">
       <div class="tool-icon">🪼</div>
-      <h2 class="tool-title">水母传信</h2>
+      <h2 class="tool-title">水母翻译官</h2>
+      <p class="tool-desc">输入人话 → 翻译成水母语<br>对方复制水母语 → 翻译回人话</p>
       <div class="jellyfish-mode">
-        <button class="mode-btn active" id="modeEncrypt">🔐 加密</button>
-        <button class="mode-btn" id="modeDecrypt">🔓 解密</button>
+        <button class="mode-btn active" id="modeEncrypt">🔮 翻译成水母语</button>
+        <button class="mode-btn" id="modeDecrypt">🔍 翻译回人话</button>
       </div>
       <textarea class="msg-input" id="msgInput" placeholder="在这里输入你的悄悄话..." rows="3"></textarea>
-      <button class="btn-bubble" id="jellyBtn">⚡ 水母发电</button>
+      <button class="btn-bubble" id="jellyBtn">⚡ 开始翻译</button>
       <div class="jellyfish-output" id="jellyOutput" style="display:none;">
-        <div class="output-text" id="outputText"></div>
-        <button class="copy-btn" id="copyBtn">📋 复制密文</button>
+        <div class="telegram-card">
+          <div class="telegram-header">📨 比奇堡水母电报</div>
+          <div class="telegram-body" id="outputText"></div>
+          <div class="telegram-footer">—— 🪼 水母翻译官 · 倾情译制 ——</div>
+        </div>
+        <button class="copy-btn" id="copyBtn">📋 一键复制电报</button>
       </div>
       <div class="jellyfish-spark" id="jellySpark"></div>
     </div>
@@ -745,24 +793,20 @@ document.getElementById('shellBtn').addEventListener('click', function() {
   }, 700);
 });
 
-// === 水母密语 ===
+// === 水母翻译官 ===
 let currentMode = 'encrypt';
 
-function encryptMessage(text) {
-  const b64 = btoa(unescape(encodeURIComponent(text)));
-  const emojis = ['🪼', '⚡', '🐚', '🫧', '🌊', '💜', '🪸', '🐠'];
-  let wrapped = '';
-  for (let i = 0; i < b64.length; i++) {
-    wrapped += b64[i];
-    if ((i + 1) % 5 === 0) wrapped += emojis[Math.floor(Math.random() * emojis.length)];
-  }
-  return '🪼⚡' + wrapped + '⚡🪼';
+function encodeJellyfish(text) {
+  const bytes = new TextEncoder().encode(text);
+  const binary = String.fromCharCode(...bytes);
+  return btoa(binary);
 }
 
-function decryptMessage(cipher) {
+function decodeJellyfish(encoded) {
   try {
-    let cleaned = cipher.replace(/🪼⚡|⚡🪼/g, '').replace(/[\u{1F300}-\u{1F9FF}]/gu, '');
-    return decodeURIComponent(escape(atob(cleaned)));
+    const binary = atob(encoded);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
   } catch(e) {
     return null;
   }
@@ -783,12 +827,33 @@ function sparkEffect(container) {
   }
 }
 
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  ta.style.top = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    return Promise.resolve();
+  } catch(e) {
+    return Promise.reject(e);
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
 document.getElementById('modeEncrypt').addEventListener('click', function() {
   currentMode = 'encrypt';
   this.classList.add('active');
   document.getElementById('modeDecrypt').classList.remove('active');
   document.getElementById('msgInput').placeholder = '在这里输入你的悄悄话...';
-  document.getElementById('jellyBtn').innerHTML = '⚡ 水母发电（加密）';
+  document.getElementById('jellyBtn').innerHTML = '⚡ 翻译成水母语';
   document.getElementById('jellyOutput').style.display = 'none';
   document.getElementById('msgInput').value = '';
 });
@@ -797,8 +862,8 @@ document.getElementById('modeDecrypt').addEventListener('click', function() {
   currentMode = 'decrypt';
   this.classList.add('active');
   document.getElementById('modeEncrypt').classList.remove('active');
-  document.getElementById('msgInput').placeholder = '粘贴密文到这里解密...';
-  document.getElementById('jellyBtn').innerHTML = '⚡ 水母发电（解密）';
+  document.getElementById('msgInput').placeholder = '把水母电报粘贴到这里翻译...';
+  document.getElementById('jellyBtn').innerHTML = '⚡ 翻译回人话';
   document.getElementById('jellyOutput').style.display = 'none';
   document.getElementById('msgInput').value = '';
 });
@@ -813,14 +878,19 @@ document.getElementById('jellyBtn').addEventListener('click', function() {
   sparkEffect(document.getElementById('jellySpark'));
 
   if (currentMode === 'encrypt') {
-    outputText.textContent = encryptMessage(input);
-    document.getElementById('copyBtn').textContent = '📋 复制密文';
+    outputText.textContent = encodeJellyfish(input);
+    document.getElementById('copyBtn').textContent = '📋 一键复制电报';
   } else {
-    const decrypted = decryptMessage(input);
+    let cleaned = input;
+    cleaned = cleaned.replace(/📨\s*比奇堡水母电报[\s\S]*?(?=[A-Za-z0-9+/=])/, '');
+    cleaned = cleaned.replace(/——\s*🪼\s*水母翻译官[\s\S]*$/, '');
+    cleaned = cleaned.trim();
+
+    const decrypted = decodeJellyfish(cleaned);
     if (decrypted !== null) {
-      outputText.textContent = '💌 解密结果：' + decrypted;
+      outputText.textContent = decrypted;
     } else {
-      outputText.textContent = '❌ 这好像不是水母密语...格式不对哦！';
+      outputText.textContent = '❌ 翻译失败...请确认粘贴的是完整的水母电报哦！';
     }
     document.getElementById('copyBtn').textContent = '📋 复制结果';
   }
@@ -831,14 +901,31 @@ document.getElementById('jellyBtn').addEventListener('click', function() {
 });
 
 document.getElementById('copyBtn').addEventListener('click', function() {
-  const text = document.getElementById('outputText').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    this.textContent = '✅ 已复制！';
+  const telegramBody = document.getElementById('outputText').textContent;
+  let textToCopy;
+  if (currentMode === 'encrypt') {
+    textToCopy = '📨 比奇堡水母电报\n\n' + telegramBody + '\n\n—— 🪼 水母翻译官 · 倾情译制 ——';
+  } else {
+    textToCopy = telegramBody;
+  }
+
+  copyText(textToCopy).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ 复制成功！';
     setTimeout(() => {
-      this.textContent = currentMode === 'encrypt' ? '📋 复制密文' : '📋 复制结果';
+      btn.textContent = currentMode === 'encrypt' ? '📋 一键复制电报' : '📋 复制结果';
     }, 2000);
   }).catch(() => {
-    this.textContent = '❌ 复制失败，请手动选择';
+    const bodyEl = document.getElementById('outputText');
+    const range = document.createRange();
+    range.selectNodeContents(bodyEl);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.getElementById('copyBtn').textContent = '👆 已选中，手动复制吧';
+    setTimeout(() => {
+      document.getElementById('copyBtn').textContent = currentMode === 'encrypt' ? '📋 一键复制电报' : '📋 复制结果';
+    }, 3000);
   });
 });
 // === 痞老板爱意值计算器 ===
