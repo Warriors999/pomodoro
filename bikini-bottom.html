@@ -171,6 +171,44 @@
     50% { transform: translateX(-20px) translateY(-30px); }
     75% { transform: translateX(15px) translateY(-10px); }
   }
+  .tool-icon { font-size: 52px; margin-bottom: 8px; }
+  .tool-title {
+    font-size: 18px;
+    color: var(--deep-blue);
+    margin-bottom: 16px;
+    font-weight: bold;
+  }
+  .compliment-bubble {
+    background: rgba(255,215,0,0.1);
+    border: 2px dashed var(--pineapple);
+    border-radius: 20px;
+    padding: 20px 16px;
+    margin-bottom: 16px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-dark);
+    line-height: 1.6;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  .compliment-bubble.pop { animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes popIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .bubble-particle {
+    position: absolute;
+    pointer-events: none;
+    font-size: 14px;
+    animation: particleUp 0.8s ease-out forwards;
+  }
+  @keyframes particleUp {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-80px) scale(0); opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -187,7 +225,15 @@
   </div>
 
   <div class="content-area" id="contentArea">
-    <div class="tool-panel active" id="panel-0"><h2>🧽 夸夸</h2></div>
+    <div class="tool-panel active" id="panel-0">
+      <div class="tool-icon">🧽</div>
+      <h2 class="tool-title">海绵宝宝的夸夸气泡</h2>
+      <div class="compliment-bubble" id="complimentText">
+        戳一下泡泡<br>收获今日份快乐 ✨
+      </div>
+      <button class="btn-bubble" id="praiseBtn">🫧 吹一个泡泡</button>
+      <div class="bubble-burst" id="bubbleBurst" style="position:relative;"></div>
+    </div>
     <div class="tool-panel" id="panel-1"><h2>🐚 运势</h2></div>
     <div class="tool-panel" id="panel-2"><h2>🪼 密语</h2></div>
     <div class="tool-panel" id="panel-3"><h2>🦀 爱意值</h2></div>
@@ -229,6 +275,78 @@ function createBubble() {
 }
 setInterval(createBubble, 2000);
 createBubble(); createBubble(); createBubble();
+
+// === 夸夸生成器 ===
+const compliments = [
+  "你比蟹老板还有钱！因为你拥有我的心 ❤️",
+  "如果可爱能换蟹黄堡，你能养活整个比奇堡！🍔",
+  "海绵宝宝抓水母还要用网，你抓我的心只用了一眼 👀",
+  "派大星说：你是我见过最亮的星星！⭐",
+  "珊迪都会嫉妒你的聪明才智！🐿️",
+  "你的笑容比蟹黄堡秘方还珍贵！✨",
+  "章鱼哥对你都说不出讨厌两个字 😤",
+  "痞老板偷了一辈子秘方，都不及偷看你一眼 🦀",
+  "你是比奇堡最靓的居民，没有之一！👑",
+  "蟹老板愿意为你免费做一个蟹黄堡 🦀🍔",
+  "海绵宝宝每天早上醒来想的第一个人就是你！🧽",
+  "你的可爱程度已经超过了派大星的憨憨指数 📈",
+  "比奇堡全体居民投票：你是最受欢迎的人类！🗳️",
+  "连神奇海螺都说你很棒！🐚",
+  "小蜗都为你鼓掌 👏🐌",
+  "你的存在让比奇堡的海水都变甜了 🌊",
+  "派大星说他愿意把最后一个蟹黄堡让给你 🍔❤️",
+  "海绵宝宝：我准备好了！准备好爱你了！🧽💛",
+  "你的美貌让水母田的水母都黯然失色 🪼",
+  "珊迪说你的智商测试结果：满分！🧪",
+  "蟹老板说他愿意花钱请你吃饭（这很罕见）💰",
+  "你是比奇堡海滩上最耀眼的贝壳 🐚✨",
+  "痞老板放弃偷秘方了，改偷你的心 💚",
+  "海绵宝宝的菠萝屋欢迎你随时来做客！🍍",
+  "你的魅力值：超过比奇堡所有居民的财产总和 📊",
+  "派大星说你是他的'最好的最好朋友' 🥰",
+  "连飞行荷兰人都想为你停留 ⛵",
+  "泡泡先生表示你的快乐指数爆表 🫧",
+  "你的可爱让比奇堡的太阳都更亮了 🌞",
+  "虾霸说你比所有蟹黄堡加起来还美味 🍔💕"
+];
+let lastCompliments = [];
+const MAX_HISTORY = 3;
+
+function getCompliment() {
+  const available = compliments.filter(c => !lastCompliments.includes(c));
+  if (available.length === 0) {
+    lastCompliments = [];
+    return compliments[Math.floor(Math.random() * compliments.length)];
+  }
+  const pick = available[Math.floor(Math.random() * available.length)];
+  lastCompliments.push(pick);
+  if (lastCompliments.length > MAX_HISTORY) lastCompliments.shift();
+  return pick;
+}
+
+function burstBubbles() {
+  const container = document.getElementById('bubbleBurst');
+  const emojis = ['🫧', '💛', '✨', '🫧', '💫'];
+  for (let i = 0; i < 8; i++) {
+    const particle = document.createElement('span');
+    particle.className = 'bubble-particle';
+    particle.textContent = emojis[i % emojis.length];
+    particle.style.left = (Math.random() * 60 - 30) + 'px';
+    particle.style.animationDuration = (Math.random() * 0.6 + 0.4) + 's';
+    particle.style.animationDelay = (Math.random() * 0.2) + 's';
+    container.appendChild(particle);
+    setTimeout(() => particle.remove(), 1000);
+  }
+}
+
+document.getElementById('praiseBtn').addEventListener('click', function() {
+  const textEl = document.getElementById('complimentText');
+  textEl.textContent = getCompliment();
+  textEl.classList.remove('pop');
+  void textEl.offsetWidth;
+  textEl.classList.add('pop');
+  burstBubbles();
+});
 </script>
 </body>
 </html>
